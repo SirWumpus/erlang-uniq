@@ -63,76 +63,40 @@ uniq(Fp, PrevLine, Filter, Count) ->
 	{error, Reason} ->
 		throw({error, Reason});
 	{ok, Line} ->
-		Tally = Filter(PrevLine, Line, Count),
+		Tally = case compare_lines(PrevLine, Line) of
+		false ->
+			Filter(PrevLine, Count), 1;
+		true ->
+			Count + 1
+		end,
 		uniq(Fp, Line, Filter, Tally);
 	eof ->
-		Filter(PrevLine, eof, Count)
+		Filter(PrevLine, Count)
 	end.
 
 compare_lines(LineA, LineB) ->
 	str:rchop(LineA) == str:rchop(LineB).
 
-filter(PrevLine, eof, _Count) ->
-	file:write(standard_io, PrevLine);
-filter(PrevLine, CurrLine, _Count) ->
-	case compare_lines(PrevLine, CurrLine) of
-	false ->
-		file:write(standard_io, PrevLine);
-	true ->
-		ok
-	end.
+filter(PrevLine, _Count) ->
+	file:write(standard_io, PrevLine).
 
-filter_count(PrevLine, eof, Count) ->
-	io:format("~B ~s", [Count, PrevLine]);
-filter_count(PrevLine, CurrLine, Count) ->
-	case compare_lines(PrevLine, CurrLine) of
-	false ->
-		io:format("~B ~s", [Count, PrevLine]),
-		1;
-	true ->
-		Count + 1
-	end.
+filter_count(PrevLine, Count) ->
+	io:format("~B ~s", [Count, PrevLine]).
 
-filter_dups(PrevLine, eof, Count) ->
+filter_dups(PrevLine, Count) ->
 	if
 	Count > 1 ->
 		file:write(standard_io, PrevLine);
 	Count == 1 ->
 		ok
-	end;
-filter_dups(PrevLine, CurrLine, Count) ->
-	case compare_lines(PrevLine, CurrLine) of
-	false ->
-		if
-		Count > 1 ->
-			file:write(standard_io, PrevLine);
-		Count == 1 ->
-			ok
-		end,
-		1;
-	true ->
-		Count + 1
 	end.
 
-filter_uniq(PrevLine, eof, Count) ->
+filter_uniq(PrevLine, Count) ->
 	if
 	Count > 1 ->
 		ok;
 	Count == 1 ->
 		file:write(standard_io, PrevLine)
-	end;
-filter_uniq(PrevLine, CurrLine, Count) ->
-	case compare_lines(PrevLine, CurrLine) of
-	false ->
-		if
-		Count > 1 ->
-			ok;
-		Count == 1 ->
-			file:write(standard_io, PrevLine)
-		end,
-		1;
-	true ->
-		Count + 1
 	end.
 
 which_filter(Options) ->
@@ -141,13 +105,13 @@ which_filter(Options) ->
 	Only_uniq = proplists:get_value(only_uniq, Options, false),
 	case {Count_repeats, Only_dups, Only_uniq} of
 	{false, false, false} ->
-		fun filter/3;
+		fun filter/2;
 	{true, false, false} ->
-		fun filter_count/3;
+		fun filter_count/2;
 	{false, true, false} ->
-		fun filter_dups/3;
+		fun filter_dups/2;
 	{false, false, true} ->
-		fun filter_uniq/3;
+		fun filter_uniq/2;
 	_ ->
 		usage()
 	end.
