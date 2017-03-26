@@ -1,0 +1,21 @@
+{application, euniq, [
+	{pkg_name, "euniq"},
+	{vsn, "1.0.0"},
+	{description, "Erlang version of uniq(1)"},
+	{links, [{"Github", "https://github.com/SirWumpus/erlang-uniq"}]},
+	{applications, [
+		kernel,
+		stdlib,
+		ebs,
+		egetopt
+	]},
+	{licenses, ["MIT"]},
+	{modules, [euniq]},
+	{files, [
+		"README.md",
+		"makefile",
+		"rebar.config",
+		"src",
+		"test"
+	]}
+]}.
